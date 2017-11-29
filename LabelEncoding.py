@@ -80,42 +80,58 @@ def cat_split(row):
 
 train_df["cat_1"], train_df["cat_2"], train_df["cat_3"] = zip(*train_df.category_name.apply(lambda val: cat_split(val)))
 test_df["cat_1"], test_df["cat_2"], test_df["cat_3"] = zip(*test_df.category_name.apply(lambda val: cat_split(val)))
-train_df.head()
 
-
-# In[ ]:
-
-
-# making dictionaries for different categories 
-keys = train_df.cat_1.unique().tolist() + test_df.cat_1.unique().tolist()
-keys = list(set(keys))
-values = list(range(len(keys)))
-cat1_dict = dict(zip(keys, values))
-
-keys2 = train_df.cat_2.unique().tolist() + test_df.cat_2.unique().tolist()
-keys2 = list(set(keys2))
-values2 = list(range(len(keys2)))
-cat2_dict = dict(zip(keys2, values2))
-
-keys3 = train_df.cat_3.unique().tolist() + test_df.cat_3.unique().tolist()
-keys3 = list(set(keys3))
-values3 = list(range(len(keys3)))
-cat3_dict = dict(zip(keys3, values3))
 
 
 # In[ ]:
+from sklearn.preprocessing import LabelEncoder
 
+def CatEncoder(train_df, test_df, col_name):
+    le = LabelEncoder()
+    train_df[col_name].fillna('UNK', inplace=True)
+    test_df[col_name].fillna('UNK', inplace=True)
+    le = le.fit(train_df[col_name].tolist() + test_df[col_name].tolist())
+    train_df[col_name] = le.transform(train_df[col_name])
+    test_df[col_name] = le.transform(test_df[col_name])
+    return train_df, test_df
 
-# function to assign category label
-def cat_lab(row,cat1_dict = cat1_dict, cat2_dict = cat2_dict, cat3_dict = cat3_dict):
-    """function to give cat label for cat1/2/3"""
-    txt1 = row['cat_1']
-    txt2 = row['cat_2']
-    txt3 = row['cat_3']
-    return cat1_dict[txt1], cat2_dict[txt2], cat3_dict[txt3]
+train_df, test_df = CatEncoder(train_df, test_df, 'cat_1')
+train_df, test_df = CatEncoder(train_df, test_df, 'cat_2')
+train_df, test_df = CatEncoder(train_df, test_df, 'cat_3')
 
-train_df["cat_1_label"], train_df["cat_2_label"], train_df["cat_3_lable"] = zip(*train_df.apply(lambda val: cat_lab(val), axis =1))
-test_df["cat_1_label"], test_df["cat_2_label"], test_df["cat_3_lable"] = zip(*test_df.apply(lambda val: cat_lab(val), axis =1))
+#%% 
+# =============================================================================
+#     
+# # making dictionaries for different categories 
+# keys = train_df.cat_1.unique().tolist() + test_df.cat_1.unique().tolist()
+# keys = list(set(keys))
+# values = list(range(len(keys)))
+# cat1_dict = dict(zip(keys, values))
+# 
+# keys2 = train_df.cat_2.unique().tolist() + test_df.cat_2.unique().tolist()
+# keys2 = list(set(keys2))
+# values2 = list(range(len(keys2)))
+# cat2_dict = dict(zip(keys2, values2))
+# 
+# keys3 = train_df.cat_3.unique().tolist() + test_df.cat_3.unique().tolist()
+# keys3 = list(set(keys3))
+# values3 = list(range(len(keys3)))
+# cat3_dict = dict(zip(keys3, values3))
+# 
+# 
+# # function to assign category label
+# def cat_lab(row,cat1_dict = cat1_dict, cat2_dict = cat2_dict, cat3_dict = cat3_dict):
+#     """function to give cat label for cat1/2/3"""
+#     txt1 = row['cat_1']
+#     txt2 = row['cat_2']
+#     txt3 = row['cat_3']
+#     return cat1_dict[txt1], cat2_dict[txt2], cat3_dict[txt3]
+# 
+# train_df["cat_1_label"], train_df["cat_2_label"], train_df["cat_3_label"] = zip(*train_df.apply(lambda val: cat_lab(val), axis =1))
+# test_df["cat_1_label"], test_df["cat_2_label"], test_df["cat_3_label"] = zip(*test_df.apply(lambda val: cat_lab(val), axis =1))
+# 
+# 
+# =============================================================================
 
 
 # ** 2. if category present -yes/no features -**
@@ -316,7 +332,8 @@ train = train_df.copy()
 test = test_df.copy()
 print("Difference of features in train and test are {}".format(np.setdiff1d(train.columns, test.columns)))
 print("")
-do_not_use_for_training = ['cat_1','test_id','cat_2','cat_3','train_id','name', 'category_name', 'brand_name', 'price', 'item_description']
+do_not_use_for_training = ['test_id','train_id','name', 'category_name', 'brand_name', 'price', 'item_description']
+#do_not_use_for_training = ['cat_1','test_id','cat_2','cat_3','train_id','name', 'category_name', 'brand_name', 'price', 'item_description']
 feature_names = [f for f in train.columns if f not in do_not_use_for_training]
 print("We will be using following features for training {}.".format(feature_names))
 print("")
