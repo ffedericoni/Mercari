@@ -2,16 +2,15 @@
 
 # # Mercari Price Suggestion Challenge
 # 
-#TODO LabelEncoding
 #use TextBlob to identify adjectives and build a column with the encoded adjectives
 #JJ adjective: nice, easy 
 #JJR adjective, comparative: nicer, easier
 #JJS adjective, superlative: nicest, easiest 
 #from pattern.en import number
 #number(string)    # "seventy-five point two" => 75.2
-#TODO filter out "No description yet" in Item Description
 #TODO build an external file with adjectives and look for adjectives used on higher prices under same category
-#TODO replace xgboost with lightgbm
+#TODO use a LOGGER
+#TODO use a BayesianOptimizer
 # In[ ]:
 
 
@@ -22,7 +21,7 @@ import numpy as np   #numpy for vector operations and basic maths
 #import datetime      #for datetime operations
 #import calendar      #for calendar for datetime operations
 import time          #to get the system time
-import sys           #to get memory usage of an object
+import sys           #to get memory usage of an object sys.getsizeof(object)
 import resource      #to get memory usage of the process
 import psutil
 #import scipy         #for other dependancies

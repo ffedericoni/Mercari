@@ -3,6 +3,7 @@ LGBM Regression on TfIDF of text features and One-Hot-Encoded Categoricals
 Featues based on Alexandu Papiu's (https://www.kaggle.com/apapiu) script: https://www.kaggle.com/apapiu/ridge-script
 LGBM based on InfiniteWing's (https://www.kaggle.com/infinitewing) script: https://www.kaggle.com/infinitewing/lightgbm-example
 """
+#TODO don't use dummies, but categorical features of LightGBM
 
 import pandas as pd
 import numpy as np
@@ -14,7 +15,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import LabelBinarizer
 import lightgbm as lgb
 import time
-
+from nltk.corpus import stopwords
 import gc
 
 start = fixstart = time.time()
@@ -52,7 +53,7 @@ interesting_words = ['new', 'perfect', 'fit', 'used', 'super', 'cute', 'excellen
                      'great', 'retail', '[rm]', 'never' ]
 for word in interesting_words:
     df[word] = df['item_description'].apply(lambda x : word in x.lower())
-
+    df[word] = df[word].astype('category')
 
 print(df.memory_usage(deep = True))
 
@@ -65,10 +66,12 @@ unique_categories = pd.Series("/".join(df["category_name"].unique().astype("str"
 count_category = CountVectorizer()
 X_category = count_category.fit_transform(df["category_name"])
 
+
+stopw = stopwords.words('english') + interesting_words + ['cant', 'ask', 'size']
 print("Descp encoders")
 count_descp = TfidfVectorizer(max_features = MAX_FEAT_DESCP, 
                               ngram_range = (1,3),
-                              stop_words = "english")
+                              stop_words = stopw)
 X_descp = count_descp.fit_transform(df["item_description"])
 
 print("Brand encoders")
@@ -76,8 +79,8 @@ vect_brand = LabelBinarizer(sparse_output=True)
 X_brand = vect_brand.fit_transform(df["brand_name"])
 
 print("Dummy Encoders")
-X_dummies = scipy.sparse.csr_matrix(pd.get_dummies(df[[
-    "item_condition_id", "shipping"]], sparse = True).values)
+rem_cols = interesting_words + ["item_condition_id", "shipping" ]
+X_dummies = scipy.sparse.csr_matrix(pd.get_dummies(df[rem_cols], sparse = True).values)
 
 X = scipy.sparse.hstack((X_dummies, 
                          X_descp,
@@ -111,14 +114,34 @@ params = {
 train_X, valid_X, train_y, valid_y = train_test_split(X_train, y_train, 
                                                       test_size = 0.1, 
                                                       random_state = 144) 
-d_train = lgb.Dataset(train_X, label=train_y)
-d_valid = lgb.Dataset(valid_X, label=valid_y)
-watchlist = [d_train, d_valid]
+evalset = [(train_X, train_y),(valid_X, valid_y)]
+#evalset = [(valid_X, valid_y)]
+lgbmodel = lgb.LGBMRegressor(learning_rate= 0.8,
+    objective='regression',
+    max_depth=4,
+    num_leaves=100,      #number of leaves in one tree
+    min_data_in_leaf=20, #minimal number of data in one leaf.
+    feature_fraction=1.0, #LightGBM will randomly select part of features on each iteration if feature_fraction smaller than 1.0.
+    min_split_gain=0.0, #the minimal gain to perform split
+    cat_l2=10.,         #L2 regularization in categorical split
+    min_data_in_bin=3,  #min number of data inside one bin, use this to avoid one-data-one-bin 
+    bagging_fraction = 1,
+    silent=True,
+    metric='rmse',
+#    train_metric=False,
+#    metric_freq=10,
+    n_estimators=3000,
+    cat_smooth=10, #this can reduce the effect of noises in categorical features, especially for categories with few data
+    max_bin=8192, #TODO try to reduce
+    num_threads=2,
+    two_round_loading=True #set this to true if data file is too big to fit in memory
+        )
+lgbmodel.fit(X=train_X, y=train_y, eval_set=evalset, eval_names=['train', 'valid'],
+            eval_metric='rmse',
+            early_stopping_rounds=50 )
 
-model = lgb.train(params, train_set=d_train, num_boost_round=3000, 
-                  valid_sets=watchlist, 
-                  early_stopping_rounds=50, verbose_eval=100) 
-preds = model.predict(X_test)
+
+preds = lgbmodel.predict(X_test)
 end = time.time()
 print("Time taken training LGBM  {}.".format((end-start)))
 
