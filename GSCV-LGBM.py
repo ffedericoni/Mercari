@@ -123,15 +123,15 @@ lgbmodel = lgb.LGBMRegressor(
     n_estimators=1000,
     cat_smooth=10, #this can reduce the effect of noises in categorical features, especially for categories with few data
     max_bin=8192, #TODO try to reduce
-    num_threads=2,
+    num_threads=3,
     two_round_loading=True #set this to true if data file is too big to fit in memory
         )
 
 param_grid = {
-    'learning_rate': 0.8,
-    'max_depth': [3, 4, 5],
-    'num_leaves': 100,
-    'max_bin':8192
+#    'learning_rate': 0.8,
+    'max_depth': [3, 4, 5]
+#    'num_leaves': 100,
+#    'max_bin':8192
 }
 
 gbm = GridSearchCV(lgbmodel, param_grid)
