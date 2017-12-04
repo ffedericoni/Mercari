@@ -134,7 +134,7 @@ param_grid = {
 #    'max_bin':8192
 }
 
-gbm = GridSearchCV(lgbmodel, param_grid)
+gbm = GridSearchCV(lgbmodel, param_grid, verbose=10, scoring='rmse')
 
 gbm.fit(X_train, y_train)
 print('Best parameters found by grid search are:', gbm.best_params_)
