@@ -120,7 +120,7 @@ lgbmodel = lgb.LGBMRegressor(
     metric='rmse',
 #    train_metric=False,
 #    metric_freq=10,
-    n_estimators=1000,
+    n_estimators=100,
     cat_smooth=10, #this can reduce the effect of noises in categorical features, especially for categories with few data
     max_bin=8192, #TODO try to reduce
     num_threads=3,
@@ -134,7 +134,7 @@ param_grid = {
 #    'max_bin':8192
 }
 
-gbm = GridSearchCV(lgbmodel, param_grid, verbose=10, scoring='rmse')
+gbm = GridSearchCV(lgbmodel, param_grid, verbose=10, scoring='neg_mean_absolute_error')
 
 gbm.fit(X_train, y_train)
 print('Best parameters found by grid search are:', gbm.best_params_)
