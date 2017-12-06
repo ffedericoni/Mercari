@@ -120,21 +120,22 @@ lgbmodel = lgb.LGBMRegressor(
     metric='rmse',
 #    train_metric=False,
 #    metric_freq=10,
-    n_estimators=100,
+    n_estimators=500,
     cat_smooth=10, #this can reduce the effect of noises in categorical features, especially for categories with few data
     max_bin=8192, #TODO try to reduce
-    num_threads=3,
+    num_threads=4,
     two_round_loading=True #set this to true if data file is too big to fit in memory
         )
 
 param_grid = {
 #    'learning_rate': 0.8,
-    'max_depth': [3, 4, 5]
-#    'num_leaves': 100,
+    'max_depth': [3],
+    'num_leaves': [30, 50, 70, 90]
 #    'max_bin':8192
 }
-
-gbm = GridSearchCV(lgbmodel, param_grid, verbose=10, scoring='neg_mean_absolute_error')
+#best is max_depth=4 num_leaves=30
+gbm = GridSearchCV(lgbmodel, param_grid, cv=5,
+                   verbose=10, scoring='neg_mean_absolute_error')
 
 gbm.fit(X_train, y_train)
 print('Best parameters found by grid search are:', gbm.best_params_)
