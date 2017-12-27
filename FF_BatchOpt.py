@@ -10,9 +10,13 @@ from scipy.sparse import csr_matrix, hstack
 
 from sklearn.linear_model import Ridge
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.svm import LinearSVR
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import Normalizer
 import lightgbm as lgb
 
 NUM_BRANDS = 4000
@@ -42,6 +46,17 @@ def to_categorical(dataset):
 def handle_no_description(dataset):
     nodesc = dataset['item_description'] == 'No description yet'
     dataset.loc[nodesc, 'item_description'] = dataset.loc[nodesc, 'name']
+
+def sparse_df_size_in_mb(sparse_df):
+    '''
+    Size of a sparse matrix in Mbytes
+    '''
+    size_in_bytes = sparse_df.data.nbytes
+    size_in_kb = size_in_bytes / 1024
+    size_in_mb = size_in_kb / 1024
+    return size_in_mb
+
+
 
 start_time = time.time()
 process = psutil.Process(os.getpid())
@@ -90,16 +105,18 @@ print('[{}] Finished count vectorize `category_name`'.format(time.time() - start
 if CELL:
     start_time = time.time()
 from nltk.corpus import stopwords
-interesting_words = ['new', 'perfect', 'fit', 'used', 'super', 'cute', 'excellent',
-                 'great', 'retail', '[rm]', 'never', 'bundle', 'diamond', 'ruby',
-                 'platinum', 'gold', 'set', 'case']
+interesting_words = ['new', 'perfect', 'fit', 'used', 
+#                     'super', 'cute', 'excellent',
+                 'great', 'retail', '[rm]', 'never used', 'bundle', 
+#                 'diamond', 'ruby', 'platinum',
+                 'gold', 'set', 'case', 'unused', 'unopened', 'sealed' ]
 X_intcol = pd.DataFrame()
 for word in interesting_words:
     X_intcol[word] = merge['item_description'].apply(lambda x : word in x.lower())
 
 X_des = merge['item_description'].apply(lambda x: len(x)).astype('float32')
 X_des = X_des[:, np.newaxis]
-scaler = MinMaxScaler()
+scaler = MaxAbsScaler()
 X_des = scaler.fit_transform(X_des)
 
 ignore_words = ['cant', 'ask', 'size', 'inch', 'inches', 'already', 'inside', 'easy']
@@ -111,6 +128,15 @@ tv = TfidfVectorizer(max_features=MAX_FEATURES_ITEM_DESCRIPTION,
                      stop_words=stop)
 X_description = tv.fit_transform(merge['item_description'])
 print('[{}] Finished TFIDF vectorize `item_description`'.format(time.time() - start_time))
+
+#==============================================================================
+# from sklearn.decomposition import TruncatedSVD
+# svd = TruncatedSVD(n_components=100, n_iter=10, random_state=42)
+# normalizer = Normalizer(copy=False)
+# lsa = make_pipeline(svd, normalizer)
+# X_SVD_des = lsa.fit_transform(X_description)
+#==============================================================================
+
 #%%
 if CELL:
     start_time = time.time()
@@ -127,37 +153,44 @@ sparse_merge = hstack((X_dummies, X_description, X_brand, X_category,
 gc.collect()
 print('[{}] Finished to create sparse merge'.format(time.time() - start_time))
 print("Memory Usage=", process.memory_info().vms/1000000./PAGESIZE, "Gb")
-#%%
 #==============================================================================
 #if CELL:
 #    start_time = time.time()
-#from sklearn.preprocessing import StandardScaler
-#scaler = StandardScaler(with_mean=False)
+#from sklearn.preprocessing import MaxAbsScaler
+#scaler = MaxAbsScaler(with_mean=False)
 #scaler.fit_transform(sparse_merge)
 #print('[{}] Time taken to scale'.format(time.time() - start_time))
 #==============================================================================
-#%%
+
 if CELL:
     start_time = time.time()
 X = sparse_merge[:nrow_train]
 X_test = sparse_merge[nrow_train:]
-
+#%%
 # def rmsle(y, y0):
 #     assert len(y) == len(y0)
 #     return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
 
 #TODO experiment with tol=0.01
-modelR1 = Ridge(solver="sag", fit_intercept=True, random_state=205, alpha=3)
+modelR1 = Ridge(solver="sag", fit_intercept=True, random_state=205, alpha=3,
+                tol=0.001)
 modelR1.fit(X, y)
 print('[{}] Finished to train ridge sag'.format(time.time() - start_time))
-predsR = modelR1.predict(X=X_test)
-print('[{}] Finished to predict ridge sag'.format(time.time() - start_time))
+#predsR = modelR1.predict(X=X_test)
+#print('[{}] Finished to predict ridge sag'.format(time.time() - start_time))
 
-modelR2 = Ridge(solver="sag", fit_intercept=True, random_state=145, alpha = 1.0)
+modelR2 = Ridge(solver="sag", fit_intercept=True, random_state=145, alpha = 0.4,
+                tol=0.0001)
 modelR2.fit(X, y)
 print('[{}] Finished to train ridge lsqrt'.format(time.time() - start_time))
-predsR2 = modelR2.predict(X=X_test)
-print('[{}] Finished to predict ridge lsqrt'.format(time.time() - start_time))
+#predsR2 = modelR2.predict(X=X_test)
+#print('[{}] Finished to predict ridge lsqrt'.format(time.time() - start_time))
+
+modelSVR = LinearSVR(random_state=10, max_iter=1000, dual=False,
+                 fit_intercept=True, C=0.55,
+                 loss='squared_epsilon_insensitive')
+modelSVR.fit(X, y)
+print('[{}] Finished to train SVR'.format(time.time() - start_time))
 #%%
 if CELL:
     start_time = time.time()
@@ -170,11 +203,11 @@ params = {
     'learning_rate': 0.76,
     'application': 'regression',
     'max_depth': 5,
-    'num_leaves': 40,
+    'num_leaves': 35,
     'verbosity': -1,
     'metric': 'RMSE',
     'feature_fraction':0.6, #cambiato da 0.7
-    'nthread': 3
+    'nthread': 4
 }
 
 params2 = {
@@ -185,31 +218,31 @@ params2 = {
     'verbosity': -1,
     'metric': 'RMSE',
     'bagging_fraction':0.8, # aggiunto ora
-    'nthread': 3
+    'nthread': 4
 }
 
 modelL1 = lgb.train(params, train_set=d_train, num_boost_round=2500, valid_sets=watchlist, \
 early_stopping_rounds=None, verbose_eval=500) 
-predsL = modelL1.predict(X_test)
+#predsL = modelL1.predict(X_test)
 
 print('[{}] Finished to predict lgb 1'.format(time.time() - start_time))
 #%%
 if CELL:
     start_time = time.time()
 train_X2, valid_X2, train_y2, valid_y2 = train_test_split(X, y, test_size = 0.01, random_state = 101) 
-d_train2 = lgb.Dataset(train_X2, label=train_y2, max_bin=8192)
-d_valid2 = lgb.Dataset(valid_X2, label=valid_y2, max_bin=8192)
+d_train2 = lgb.Dataset(train_X2, label=train_y2, max_bin=4096)
+d_valid2 = lgb.Dataset(valid_X2, label=valid_y2, max_bin=4096)
 watchlist2 = [d_train2, d_valid2]
 
-modelL2 = lgb.train(params2, train_set=d_train2, num_boost_round=1500, valid_sets=watchlist2, \
+modelL2 = lgb.train(params2, train_set=d_train2, num_boost_round=10, valid_sets=watchlist2, \
 early_stopping_rounds=None, verbose_eval=500) 
-predsL2 = modelL2.predict(X_test)
+#predsL2 = modelL2.predict(X_test)
 
 print('[{}] Finished to predict lgb 2'.format(time.time() - start_time))
 
-preds = predsR2*0.15 + predsR*0.05 + predsL*0.6 + predsL2*0.2
+#preds = predsR2*0.15 + predsR*0.05 + predsL*0.6 + predsL2*0.0
 
-submission['price'] = np.expm1(preds)
+#submission['price'] = np.expm1(preds)
 #submission.to_csv("submission_lgbm_ridge_8.csv", index=False)
 #TODO cerca elementi con maggiore errore
 #TODO aggiungi al Kernel la colonna des_len 
@@ -217,8 +250,19 @@ submission['price'] = np.expm1(preds)
 #TODO dai peso maggiore alle colonne delle parole interessanti
 #TODO rimuovi prezzi a 0.0 o inserisci prezzi medi per categoria?
 #TODO Parallelize the Vectorizations using the 4 cores
-#TODO GaussianNB partial_fit to manage batches of data
 #TODO check feature importances
+#TODO decreasing learning rate on LGBM
+#TODO use HashingVectorizer instead of TfIdf
+#TODO use estimators with partial_fit (SGD...)
+#TODO add new words
+#TODO add column with expensive brands
+#TODO normalize strings (Iphone 6 = Iphone6, 64 gb = 64gb,...)
+#==============================================================================
+# from sklearn.utils.testing import all_estimators
+# for name, Class in all_estimators():
+#     if hasattr(Class, "partial_fit"):
+#         print("%s.%s" % (Class.__module__.split(".")[1], name))
+#==============================================================================
 #==============================================================================
 # for ind in range(10):
 #     print("Truth=", y[ind], 
@@ -228,17 +272,19 @@ submission['price'] = np.expm1(preds)
 #     "R2=", modelR2.predict(X[ind]))
 #==============================================================================
 #%%
-from sklearn.metrics import mean_squared_error
 predTL1 = modelL1.predict(X)
 predTL2 = modelL2.predict(X)
 predTR1 = modelR1.predict(X)
 predTR2 = modelR2.predict(X)
-predall = predTL1*0.5 + predTL2*0.2 + predTR1*0.15 + predTR2*0.15
+predSVR = modelSVR.predict(X)
+
+predall = predTL1*0.81 + predTL2*0.0 + predTR1*0.0 + predTR2*0.19 + predSVR*0.0
 print("MSE:", 
     "L1=", mean_squared_error(y,predTL1),
     "L2=", mean_squared_error(y,predTL2),
     "R1=", mean_squared_error(y,predTR1),
     "R2=", mean_squared_error(y,predTR2),
+    "SVR=", mean_squared_error(y,predSVR),
     "\nALL=", mean_squared_error(y,predall)
     )
 
@@ -254,10 +300,11 @@ print("Much Lower priced items: ", len(low_err))
 #         merge.iloc[ind, 3])
 
 #==============================================================================
-#predall = predTL1*0.65 + predTL2*0.05 + predTR1*0.15 + predTR2*0.15
-#MSE: L1= 0.18086623326 L2= 0.206544236825 R1= 0.205544041285 R2= 0.205058258114 
-#ALL= 0.17742740028354798
-#Much Higher priced items:  1942
-#Much Lower priced items:  1381
+#predall = predTL1*0.81 + predTR1*0.00 + predTR2*0.19 + predSVR*0.00
+#MSE: L1= 0.169277258155 L2= 0.38710943286 R1= 0.205784145889 R2= 0.204534039615 
+#SVR= 0.205180495911
+#ALL= 0.166962843215
+#Much Higher priced items:  1646
+#Much Lower priced items:  1312
 #==============================================================================
 
