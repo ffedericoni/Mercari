@@ -1,13 +1,11 @@
-    max_bin=8192, #TODO try to reduce
+#TODO Try RandomTreesEmbedding
 #TODO Add a feature for number of words in description
-#TODO GaussianNB partial_fit to manage batches of data
 #TODO GridSearchCV on max_bin
 #TODO LabelEncoding
 #TODO Parallelize the Vectorizations using the 4 cores
 #TODO add column with expensive brands
 #TODO add new words
 #TODO aggiorna sul Kernel le parole interessanti e non
-#TODO aggiungi al Kernel la colonna des_len 
 #TODO aggiungi al Kernel la funzione handle_no_description
 #TODO build an external file with adjectives and look for adjectives used on higher prices under same category
 #TODO cerca elementi con maggiore errore
@@ -16,13 +14,26 @@
 #TODO decreasing learning rate on LGBM
 #TODO don't use dummies, but categorical features of LightGBM
 #TODO experiment with tol
-#TODO experiment with tol=0.01
 #TODO filter out "No description yet" in Item Description
 #TODO filter out [rm] in Item Description
 #TODO normalize strings (Iphone 6 = Iphone6, 64 gb = 64gb,...)
 #TODO remove brand from description
 #TODO rimuovi prezzi a 0.0 o inserisci prezzi medi per categoria?
-#TODO use HashingVectorizer instead of TfIdf
 #TODO use a BayesianOptimizer
 #TODO use a LOGGER
-#TODO use estimators with partial_fit (SGD...)
+#TODO take brand from descr and add it to brand column
+#TODO try TF Regresson
+#TODO make a pipeline with HashingVectorizer and TfidfTransformer
+#TODO bucketize prices: 1015 -->1000
+	def bucketize(price):
+		if price > 100:
+			interval = int(price / 100)
+			r_price = interval * int(price / interval)
+		return r_price
+#TODO remove LabelEncoder and use Count or Hash or OneHot
+#TODO Best SGDR 0.660163057854 {'alpha': 0.1, 'eta0': 0.05, 'learning_rate': 'invscaling', 'max_iter': 400, 'power_t': 0.25}
+#TODO non_letter = re.compile(r'\W+'); text = non_letter.sub(' ', text)
+
+#TODO Target encoding like in https://www.kaggle.com/ogrellier/python-target-encoding-for-categorical-features
+#TODO Category Embedding like in https://arxiv.org/abs/1604.06737
+#TODO try PCA or SVd to redeuce dimensions
