@@ -11,9 +11,11 @@ Kernel from 3rd place team (whitebird): https://www.kaggle.com/whitebird/mercari
 
 Kernel from 4th place (ChenglongChen): https://github.com/ChenglongChen/tensorflow-XNN
 
+Kernel from 9th place (LeeYun): https://www.kaggle.com/leeyun/ensemble-model?scriptVersionId=2460425
+
 Kernel from 16th place (toshi_k): https://www.kaggle.com/toshik/test-60?scriptVersionId=2459048
 
 Kernel from 18th place (Peter Hurford): https://www.kaggle.com/peterhurford/lgb-and-fm-18th-place-0-40604/code
 
-Kernel from 22nd place: https://www.kaggle.com/ogrellier/multi-process-queues-and-workers-test/code
+Kernel from 22nd place (Olivier): https://www.kaggle.com/ogrellier/multi-process-queues-and-workers-test/code
 
