@@ -13,6 +13,8 @@ Kernel from 4th place (ChenglongChen): https://github.com/ChenglongChen/tensorfl
 
 Kernel from 9th place (LeeYun): https://www.kaggle.com/leeyun/ensemble-model?scriptVersionId=2460425
 
+Kernel from 13th place (Muhammad Alfiansyah): https://www.kaggle.com/muhammadalfiansyah/push-the-lgbm-v19/code
+
 Kernel from 16th place (toshi_k): https://www.kaggle.com/toshik/test-60?scriptVersionId=2459048
 
 Kernel from 18th place (Peter Hurford): https://www.kaggle.com/peterhurford/lgb-and-fm-18th-place-0-40604/code
