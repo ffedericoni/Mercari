@@ -11,6 +11,8 @@ Kernel from 3rd place team (whitebird): https://www.kaggle.com/whitebird/mercari
 
 Kernel from 4th place (ChenglongChen): https://github.com/ChenglongChen/tensorflow-XNN
 
+Kernel from 6th place: https://www.kaggle.com/tezdhar/nnet-v1001-attention-dbbd10 and https://www.kaggle.com/tezdhar/tf-conv1d-tf-fasttext
+
 Kernel from 9th place (LeeYun): https://www.kaggle.com/leeyun/ensemble-model?scriptVersionId=2460425
 
 Kernel from 13th place (Muhammad Alfiansyah): https://www.kaggle.com/muhammadalfiansyah/push-the-lgbm-v19/code
