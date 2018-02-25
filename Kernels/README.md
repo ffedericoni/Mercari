@@ -7,6 +7,8 @@ My best kernel, placed 119th, with a Private Score = 0.42258: https://www.kaggle
 
 Kernel from winning team, but not the winning kernel: https://www.kaggle.com/ffedericoni/mercari-golf-0-3875-cv-in-75-loc-1900-s/code
 
+Kernel from 2nd place: https://www.kaggle.com/mchahhou/mercari-second-place-solution?scriptVersionId=2511018
+
 Kernel from 3rd place team (whitebird): https://www.kaggle.com/whitebird/mercari-price-3rd-0-3905-cv-at-pb-in-3300-s?scriptVersionId=2603807
 
 Kernel from 4th place (ChenglongChen): https://github.com/ChenglongChen/tensorflow-XNN
